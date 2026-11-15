@@ -9,12 +9,43 @@ import android.widget.CheckBox;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 
 public class MainActivity extends AppCompatActivity {
 
     private Spinner spService;
     private EditText etDate, etName, etPhone;
     private CheckBox cbFirstVisit;
+
+    // Odbieranie wyniku z drugiego ekranu
+    private final ActivityResultLauncher<Intent> rezerwacjaLauncher =
+            registerForActivityResult(
+                    new ActivityResultContracts.StartActivityForResult(),
+                    result -> {
+
+                        if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+
+                            String number = result.getData().getStringExtra(
+                                    SummaryActivity.EXTRA_NUMBER
+                            );
+
+                            Toast.makeText(
+                                    this,
+                                    getString(R.string.confirmed, number),
+                                    Toast.LENGTH_LONG
+                            ).show();
+
+                        } else if (result.getResultCode() == RESULT_CANCELED) {
+
+                            Toast.makeText(
+                                    this,
+                                    R.string.cancelled,
+                                    Toast.LENGTH_SHORT
+                            ).show();
+                        }
+                    }
+            );
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,8 +80,6 @@ public class MainActivity extends AppCompatActivity {
         String name = etName.getText().toString().trim();
         String phone = etPhone.getText().toString().trim();
 
-        // Walidacja formularza
-
         if (spService.getSelectedItemPosition() == 0) {
             Toast.makeText(this, R.string.error_service, Toast.LENGTH_SHORT).show();
             return;
@@ -71,8 +100,6 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // Przekazywanie danych
-
         Intent intent = new Intent(MainActivity.this, SummaryActivity.class);
 
         intent.putExtra(SummaryActivity.EXTRA_SERVICE, spService.getSelectedItem().toString());
@@ -81,6 +108,7 @@ public class MainActivity extends AppCompatActivity {
         intent.putExtra(SummaryActivity.EXTRA_PHONE, phone);
         intent.putExtra(SummaryActivity.EXTRA_FIRST_VISIT, cbFirstVisit.isChecked());
 
-        startActivity(intent);
+        // Uruchomienie drugiego ekranu z oczekiwaniem na wynik
+        rezerwacjaLauncher.launch(intent);
     }
 }
